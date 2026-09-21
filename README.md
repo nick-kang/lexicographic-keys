@@ -1,7 +1,8 @@
 # lexicographic-keys
 
-Generate sortable string keys to insert or reorder items without renumbering a
-list. No runtime dependencies; TypeScript declarations included.
+Generate sortable string or signed 32-bit integer keys to insert or reorder items.
+String keys grow as needed; integer keys may require renumbering when gaps fill up.
+No runtime dependencies; TypeScript declarations included.
 
 ## Installation
 
@@ -41,6 +42,39 @@ Invalid bounds or counts throw. Use generated keys as bounds to avoid invalid ga
 
 Identical inputs produce identical keys, so coordinate concurrent inserts into the
 same gap.
+
+## Signed 32-bit integer keys
+
+```ts
+import { generateInt32Key, generateInt32Keys } from "lexicographic-keys";
+
+generateInt32Key(); // -1: first item
+generateInt32Key(-20, -10); // -15: negative keys
+generateInt32Key(0); // 1_073_741_823: positive keys
+generateInt32Keys(10, 20, 3); // [12, 15, 17]: insert between items
+generateInt32Key(10, 11); // throws RangeError: no integer fits
+```
+
+```ts
+generateInt32Key(start?: number, end?: number): number
+generateInt32Keys(start?: number, end?: number, count = 1): number[]
+```
+
+Returns one integer or an evenly spaced, ascending batch strictly between the
+bounds. Omitted bounds default to `-2_147_483_648` and `2_147_483_647`; neither
+endpoint is generated. Supply `0` as the lower bound to generate positive keys.
+Sort numeric keys with `.sort((a, b) => a - b)`.
+
+Bounds must be integers within the inclusive signed 32-bit range. Non-number
+bounds throw `TypeError`; fractional, nonfinite, out-of-range, reversed, or equal
+bounds throw `RangeError`. `count` must be a nonnegative safe integer, or a
+`RangeError` is thrown. Zero returns `[]` after validating the bounds and their
+order, even when the bounds are adjacent.
+
+Unlike string keys, integer keys have finite space. If a gap cannot fit the
+requested count, generation throws `RangeError`; the caller must renumber stored
+keys before retrying. Identical inputs produce identical keys, so coordinate
+concurrent inserts into the same gap.
 
 ## Releasing
 

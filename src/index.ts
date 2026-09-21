@@ -87,4 +87,54 @@ function generateKey(start?: string, end?: string): string {
   return generateKeys(start, end, 1).join("");
 }
 
-export { generateKey, generateKeys };
+/**
+ * Return `count` distinct, ascending signed 32-bit integers strictly between the bounds.
+ * Sort with `(a, b) => a - b`. Identical inputs produce identical keys.
+ * Renumber keys in the caller when a gap runs out of space.
+ *
+ * @param start - Exclusive lower bound, default -2_147_483_648.
+ * @param end - Exclusive upper bound, default 2_147_483_647.
+ * @param count - Nonnegative safe integer, default 1. Zero still validates bounds.
+ * @throws {TypeError} A supplied bound is not a number.
+ * @throws {RangeError} Bounds are not signed 32-bit integers, bounds are reversed/equal,
+ * count is invalid, or the gap cannot fit the requested count.
+ *
+ * @example
+ * generateInt32Keys();            // [-1]
+ * generateInt32Keys(10, 20, 3);   // [12, 15, 17]
+ * generateInt32Keys(-20, -10);    // [-15]
+ * generateInt32Keys(0);          // [1_073_741_823]: positive keys
+ */
+function generateInt32Keys(start = -2_147_483_648, end = 2_147_483_647, count = 1): number[] {
+  for (const bound of [start, end]) {
+    if (typeof bound !== "number") {
+      throw new TypeError("Bounds must be numbers or undefined");
+    }
+    if (!Number.isInteger(bound) || bound < -2_147_483_648 || bound > 2_147_483_647) {
+      throw new RangeError("Bounds must be signed 32-bit integers");
+    }
+  }
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new RangeError("Count must be a nonnegative safe integer");
+  }
+  if (start >= end) {
+    throw new RangeError("Bounds must be ascending");
+  }
+  if (count > end - start - 1) {
+    throw new RangeError("Gap cannot fit the requested count");
+  }
+
+  const low = BigInt(start);
+  const gap = BigInt(end) - low;
+  const divisions = BigInt(count) + 1n;
+  return Array.from({ length: count }, (_, index) =>
+    Number(low + (gap * (BigInt(index) + 1n)) / divisions),
+  );
+}
+
+/** Return one integer using the same bounds and validation as {@link generateInt32Keys}. */
+function generateInt32Key(start?: number, end?: number): number {
+  return generateInt32Keys(start, end, 1)[0]!;
+}
+
+export { generateKey, generateKeys, generateInt32Key, generateInt32Keys };

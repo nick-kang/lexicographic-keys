@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { generateKey, generateKeys } from "../src/index.ts";
+import { generateKey, generateKeys, generateInt32Key, generateInt32Keys } from "../src/index.ts";
 
 test("generateKey returns one string and propagates bound validation", () => {
   assert.equal(generateKey(), "V");
@@ -108,6 +108,97 @@ test("invalid bounds and counts are rejected, including for empty batches", () =
   ]) {
     for (const count of [0, 1]) {
       assert.throws(() => generateKeys(start, end, count), RangeError);
+    }
+  }
+});
+
+test("Int32 examples, omitted bounds, exact capacity, and zero count", () => {
+  assert.equal(generateInt32Key(), -1);
+  assert.deepEqual(generateInt32Keys(), [-1]);
+  assert.deepEqual(generateInt32Keys(undefined, undefined, 3), [-1_073_741_825, -1, 1_073_741_823]);
+  assert.equal(generateInt32Key(-20, -10), -15);
+  assert.equal(generateInt32Key(0), 1_073_741_823);
+  assert.equal(generateInt32Key(undefined, 0), -1_073_741_824);
+  assert.deepEqual(generateInt32Keys(10, 20, 3), [12, 15, 17]);
+  assert.deepEqual(generateInt32Keys(-3, 3, 5), [-2, -1, 0, 1, 2]);
+  assert.equal(generateInt32Key(-2_147_483_648, -2_147_483_646), -2_147_483_647);
+  assert.equal(generateInt32Key(2_147_483_645, 2_147_483_647), 2_147_483_646);
+  assert.deepEqual(generateInt32Keys(undefined, undefined, 0), []);
+  assert.deepEqual(generateInt32Keys(10, 11, 0), []);
+  assert.throws(() => generateInt32Key(10, 11), RangeError);
+  assert.throws(() => generateInt32Keys(-3, 3, 6), RangeError);
+  assert.throws(() => generateInt32Keys(undefined, undefined, Number.MAX_SAFE_INTEGER), RangeError);
+});
+
+test("Int32 batches are deterministic, ordered, and inside exclusive bounds", () => {
+  const bounds = [-2_147_483_648, -2_147_483_647, -20, -1, 0, 1, 20, 2_147_483_646, 2_147_483_647];
+  for (const start of bounds) {
+    for (const end of bounds) {
+      if (start >= end) continue;
+      for (const count of [0, 1, 2, 10, 100]) {
+        if (count > end - start - 1) {
+          assert.throws(() => generateInt32Keys(start, end, count), RangeError);
+          continue;
+        }
+        const keys = generateInt32Keys(start, end, count);
+        assert.equal(keys.length, count);
+        assert.deepEqual(keys, generateInt32Keys(start, end, count));
+        let previous = start;
+        for (const key of keys) {
+          assert.ok(Number.isInteger(key));
+          assert.ok(key > previous && key < end);
+          previous = key;
+        }
+        // The count + 1 gaps must differ by at most one integer.
+        const gaps = [...keys, end].map(
+          (key, index) => key - (index === 0 ? start : keys[index - 1]),
+        );
+        assert.ok(Math.max(...gaps) - Math.min(...gaps) <= 1);
+      }
+    }
+  }
+});
+
+test("Int32 invalid bounds and counts are rejected, including for empty batches", () => {
+  for (const bound of [
+    null,
+    "1",
+    {},
+    [],
+    true,
+    1n,
+    NaN,
+    Infinity,
+    -Infinity,
+    0.5,
+    -2_147_483_649,
+    2_147_483_648,
+  ]) {
+    const error = typeof bound === "number" ? RangeError : TypeError;
+    // @ts-expect-error Exercise invalid inputs from JavaScript callers.
+    assert.throws(() => generateInt32Key(bound), error);
+    // @ts-expect-error Exercise invalid inputs from JavaScript callers.
+    assert.throws(() => generateInt32Key(undefined, bound), error);
+    for (const count of [0, 1]) {
+      // @ts-expect-error Exercise invalid inputs from JavaScript callers.
+      assert.throws(() => generateInt32Keys(bound, undefined, count), error);
+      // @ts-expect-error Exercise invalid inputs from JavaScript callers.
+      assert.throws(() => generateInt32Keys(undefined, bound, count), error);
+    }
+  }
+  for (const count of [-1, 0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1, "1", null, 1n]) {
+    // @ts-expect-error Exercise invalid inputs from JavaScript callers.
+    assert.throws(() => generateInt32Keys(undefined, undefined, count), RangeError);
+  }
+  for (const [start, end] of [
+    [1, -1],
+    [0, 0],
+    [undefined, -2_147_483_648],
+    [2_147_483_647, undefined],
+  ]) {
+    assert.throws(() => generateInt32Key(start, end), RangeError);
+    for (const count of [0, 1]) {
+      assert.throws(() => generateInt32Keys(start, end, count), RangeError);
     }
   }
 });
