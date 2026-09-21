@@ -1,9 +1,17 @@
 {
   "name": "lexicographic-keys",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Generate lexicographically ordered keys between strings.",
-  "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nick-kang/lexicographic-keys.git"
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
+  "type": "module",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
@@ -11,18 +19,21 @@
       "import": "./dist/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
   "scripts": {
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true });\"",
     "build": "npm run clean && tsc",
     "dev": "tsc --watch",
+    "lint": "oxlint .",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && node --test test/*.test.mjs",
+    "test": "node --test test/*.test.ts",
     "prepack": "npm run build"
   },
   "devDependencies": {
+    "@sindresorhus/tsconfig": "^8.1.0",
+    "oxfmt": "^0.70.0",
+    "oxlint": "^1.85.0",
     "typescript": "^7.0.2"
   }
 }
