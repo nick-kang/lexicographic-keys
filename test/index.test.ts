@@ -32,6 +32,11 @@ function check(start: string | undefined, end: string | undefined, count: number
 test("examples, omitted bounds, and zero count", () => {
   assert.deepEqual(generateKeys(), ["V"]);
   assert.deepEqual(generateKeys("A", "B", 3), ["AF", "AV", "Ak"]);
+  assert.deepEqual(generateKeys("A00000001", "A0000000z", 3), [
+    "A0000000G",
+    "A0000000V",
+    "A0000000k",
+  ]);
   assert.deepEqual(generateKeys(undefined, undefined, 10), [
     "5",
     "B",

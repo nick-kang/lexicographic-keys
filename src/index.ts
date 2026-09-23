@@ -1,5 +1,6 @@
 const alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 const base = 62n;
+const chunkBase = base ** 8n;
 
 function encode(key: string): bigint {
   let value = 0n;
@@ -11,11 +12,18 @@ function encode(key: string): bigint {
 
 function decode(value: bigint, width: number): string {
   let key = "";
-  while (value > 0n) {
-    key = alphabet[Number(value % base)] + key;
-    value /= base;
+  while (width > 0) {
+    let chunk = Number(value % chunkBase);
+    value /= chunkBase;
+    // Eight base62 digits fit in a safe integer.
+    const digits = Math.min(width, 8);
+    for (let index = 0; index < digits; index++) {
+      key = alphabet[chunk % 62] + key;
+      chunk = Math.floor(chunk / 62);
+    }
+    width -= digits;
   }
-  return key.padStart(width, "0");
+  return key;
 }
 
 /**
@@ -64,19 +72,16 @@ function generateKeys(start?: string, end?: string, count = 1): string[] {
     width++;
   }
 
+  const span = high - low;
   let previous = start ?? "";
   return Array.from({ length: count }, (_, index) => {
-    const value = low + ((high - low) * (BigInt(index) + 1n)) / divisions;
+    const value = low + (span * (BigInt(index) + 1n)) / divisions;
     let key = decode(value, width);
-    // Shorten without crossing the preceding key or creating a zero-suffix gap.
-    for (let length = 1; length <= key.length; length++) {
-      if (key[length - 1] === "0") continue;
-      const prefix = key.slice(0, length);
-      if (prefix > previous) {
-        key = prefix;
-        break;
-      }
-    }
+    let length = 0;
+    // Keep the first prefix greater than the previous key that does not end in zero.
+    while (length < previous.length && key[length] === previous[length]) length++;
+    while (key[length] === "0") length++;
+    key = key.slice(0, length + 1);
     previous = key;
     return key;
   });
