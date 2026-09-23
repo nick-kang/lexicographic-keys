@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.3.1 - 2026-09-22
+
+- Speed up key generation by decoding base62 digits in chunks, reusing the interval span, and scanning each candidate prefix once. Generated keys remain unchanged.
+
 ## 0.3.0 - 2026-09-21
 
 - Remove `generateInt32Key` and `generateInt32Keys` (breaking change): fixed-width integer keys allow only roughly 31 rounds of repeated midpoint insertion before a gap is exhausted. Use `generateKey` and `generateKeys`, which grow as needed, instead.
