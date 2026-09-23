@@ -41,23 +41,3 @@ Invalid bounds or counts throw. Use generated keys as bounds to avoid invalid ga
 
 Identical inputs produce identical keys, so coordinate concurrent inserts into the
 same gap.
-
-## Releasing
-
-1. On `main`, run `npm version patch --no-git-tag-version` (or choose `minor` or
-   `major`) and move the changes under `Unreleased` in `CHANGELOG.md` into a dated
-   version entry, leaving an empty `Unreleased` section.
-2. Run `npm ci`, `npm run typecheck`, `npm run lint`, `npm run format:check`,
-   `npm test`, and `npm pack --dry-run`. Review the package contents.
-3. Commit and push the changes to origin. Create and push an annotated tag matching
-   the package version, such as `v0.1.1`.
-4. Publish a GitHub release for that tag, using the changelog entry as its notes.
-   The publishing workflow checks the tag and runs the checks before publishing to
-   npm. Releases marked as prereleases are skipped.
-
-The initial `0.1.0` release is published from the authenticated npm CLI. During that
-GitHub release, temporarily disable `publish.yml` to avoid publishing it twice,
-then re-enable it. Future releases use [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/):
-configure GitHub owner `nick-kang`, repository `lexicographic-keys`, workflow
-`publish.yml`, no environment, and allow direct publishing in the npm package
-settings. No npm token secret is needed.
